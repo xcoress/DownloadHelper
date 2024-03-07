@@ -11,8 +11,19 @@ import android.content.BroadcastReceiver;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import android.content.IntentFilter;
+//uncompress
+import java.io.BufferedOutputStream;
+import java.io.BufferedInputStream;
 import java.io.File;
-
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+//fk no
+import android.os.AsyncTask;
+import android.app.ProgressDialog;
 
 public class FileDownloadHelper {
 
@@ -25,19 +36,18 @@ public class FileDownloadHelper {
 
     @NonNull
     private static File getHomeDir() {
-        return new File(Environment.getExternalStorageDirectory(), BuildConfig.home+"/1_04_patch.gro").getAbsoluteFile();
+        return new File(Environment.getExternalStorageDirectory(), BuildConfig.home + "/1_04_patch.gro").getAbsoluteFile();
     }
-    //чек папки, если папки нет вызов функции showDownloadDialog
+    // Проверка папки, если папки нет вызов функции showDownloadDialog
     public void checkFolderAndDownloadFile() {
         File folder = getHomeDir();
         if (!folder.exists()) {
             showDownloadDialog();
         }
     }
-    //Диалоговое окно спрашивающее качаем или нет, если да - вызов функции downloadFile
+    // Диалоговое окно спрашивающее качаем или нет, если да - вызов функции downloadFile
     private void showDownloadDialog() {
         new AlertDialog.Builder(context)
-
                 .setTitle("Folder not found")
                 .setMessage("Would you like to download the content?")
                 .setPositiveButton("Download", new DialogInterface.OnClickListener() {
@@ -57,24 +67,18 @@ public class FileDownloadHelper {
                 .setPositiveButton("Отмена", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
-                        // Здесь вы можете прервать процесс скачивания
                         dialog.cancel();
                     }
                 })
                 .show();
-        String url = "https://github.com/Skyrimus/Serious-Sam-Android/releases/download/v1.05.2/SeriousSamAndroid-v1.05.2-TSE-release.apk"; // ну типа путь ога?
+
+        String url = "https://github.com/Skyrimus/Serious-Sam-Android/releases/download/v1.05.2/SeriousSamAndroid-v1.05.2-TSE-release.apk";
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
         request.setDescription("Загрузка файла...");
         request.setTitle("Файл загружается");
-
-        // Если вы используете Wi-Fi, разрешите скачивание через Wi-Fi
         request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI);
-
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "SeriousSamTFE.zip"); //моё говно
-
-        // Уведомление будет отображаться во время скачивания и после завершения загрузки
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "SeriousSamTFE.zip");
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-
 
         DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
         long downloadID = manager.enqueue(request);
@@ -82,18 +86,56 @@ public class FileDownloadHelper {
         BroadcastReceiver onDownloadComplete = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                // получение ID загрузки
                 long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
                 if (downloadID == id) {
-                    Toast.makeText(context, "Zalupa", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Download Complete", Toast.LENGTH_SHORT).show();
 
+                    // Путь к загруженному файлу в папке "Downloads"
+                    String downloadPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + "/";
+                    String fileName = "SeriousSamTFE.zip";
+                    unpackZip(downloadPath, fileName);
                 }
             }
         };
 
         context.registerReceiver(onDownloadComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+    }
 
+    // Добавление метода для распаковки архива
+    private void unpackZip(String path, String zipname) {
+        InputStream is;
+        ZipInputStream zis;
+        try {
+            String filename;
+            is = new FileInputStream(path + zipname);
+            zis = new ZipInputStream(new BufferedInputStream(is));
+            ZipEntry ze;
+            byte[] buffer = new byte[1024];
+            int count;
 
+            while ((ze = zis.getNextEntry()) != null) {
+                filename = ze.getName();
+
+                if (ze.isDirectory()) {
+                    File fmd = new File(path + filename);
+                    fmd.mkdirs();
+                    continue;
+                }
+
+                FileOutputStream fout = new FileOutputStream(path + filename);
+
+                while ((count = zis.read(buffer)) != -1) {
+                    fout.write(buffer, 0, count);
+                }
+
+                fout.close();
+                zis.closeEntry();
+            }
+
+            zis.close();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 }
-
