@@ -34,6 +34,7 @@ android {
 
 dependencies {
 
+    implementation 'com.liulishuo.filedownloader:library:1.7.7'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.4.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'

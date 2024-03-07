@@ -24,6 +24,11 @@ import java.util.zip.ZipInputStream;
 //fk no
 import android.os.AsyncTask;
 import android.app.ProgressDialog;
+//Using filedownloader from git
+import com.liulishuo.filedownloader.FileDownloader;
+import com.liulishuo.filedownloader.FileDownloadListener;
+import com.liulishuo.filedownloader.BaseDownloadTask;
+
 
 public class FileDownloadHelper {
 
@@ -60,82 +65,50 @@ public class FileDownloadHelper {
                 .show();
     }
 
-    private void downloadFile() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("Файл на скачивании")
-                .setMessage("Статус скачивания...")
-                .setPositiveButton("Отмена", new DialogInterface.OnClickListener() {
+    public void downloadFile(){
+
+        FileDownloader.setup(context); // Это можно сделать в вашем Application классе
+
+        FileDownloader.getImpl().create("https://github.com/Skyrimus/Serious-Sam-Android/releases/download/v1.05.3/SeriousSamAndroid-v1.05.3-TFE-release.apk")
+                .setPath(Environment.getExternalStorageDirectory().getAbsolutePath()+"/Download/SE")
+                .setListener(new FileDownloadListener() {
                     @Override
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
+                    protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                        // Вызывается, когда загрузка в ожидании начала
                     }
-                })
-                .show();
 
-        String url = "https://github.com/Skyrimus/Serious-Sam-Android/releases/download/v1.05.2/SeriousSamAndroid-v1.05.2-TSE-release.apk";
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-        request.setDescription("Загрузка файла...");
-        request.setTitle("Файл загружается");
-        request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI);
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "SeriousSamTFE.zip");
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                    @Override
+                    protected void progress(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                        // Вызывается для обновления прогресса загрузки
+                    }
 
-        DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-        long downloadID = manager.enqueue(request);
+                    @Override
+                    protected void completed(BaseDownloadTask task) {
+                        // Вызывается, когда загрузка успешно завершена
+                    }
 
-        BroadcastReceiver onDownloadComplete = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-                if (downloadID == id) {
-                    Toast.makeText(context, "Download Complete", Toast.LENGTH_SHORT).show();
+                    @Override
+                    protected void paused(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                        // Вызывается, когда загрузка приостановлена
+                    }
 
-                    // Путь к загруженному файлу в папке "Downloads"
-                    String downloadPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + "/";
-                    String fileName = "SeriousSamTFE.zip";
-                    unpackZip(downloadPath, fileName);
-                }
-            }
-        };
+                    @Override
+                    protected void error(BaseDownloadTask task, Throwable e) {
+                        // Вызывается, когда во время загрузки произошла ошибка
+                    }
 
-        context.registerReceiver(onDownloadComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+                    @Override
+                    protected void warn(BaseDownloadTask task) {
+                        // Вызывается, если загрузка уже находится в очереди
+                    }
+                }).start();
+
+
+    }
+
+
     }
 
     // Добавление метода для распаковки архива
-    private void unpackZip(String path, String zipname) {
-        InputStream is;
-        ZipInputStream zis;
-        try {
-            String filename;
-            is = new FileInputStream(path + zipname);
-            zis = new ZipInputStream(new BufferedInputStream(is));
-            ZipEntry ze;
-            byte[] buffer = new byte[1024];
-            int count;
 
-            while ((ze = zis.getNextEntry()) != null) {
-                filename = ze.getName();
 
-                if (ze.isDirectory()) {
-                    File fmd = new File(path + filename);
-                    fmd.mkdirs();
-                    continue;
-                }
-
-                FileOutputStream fout = new FileOutputStream(path + filename);
-
-                while ((count = zis.read(buffer)) != -1) {
-                    fout.write(buffer, 0, count);
-                }
-
-                fout.close();
-                zis.closeEntry();
-            }
-
-            zis.close();
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
-    }
-}
