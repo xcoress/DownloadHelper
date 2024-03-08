@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.Environment;
 import android.content.BroadcastReceiver;
+import android.util.Log;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import android.content.IntentFilter;
@@ -41,7 +42,7 @@ public class FileDownloadHelper {
 
     @NonNull
     private static File getHomeDir() {
-        return new File(Environment.getExternalStorageDirectory(), BuildConfig.home + "/1_04_patch.gro").getAbsoluteFile();
+        return new File(Environment.getExternalStorageDirectory(), "/1_04_patch.gro").getAbsoluteFile();
     }
     // Проверка папки, если папки нет вызов функции showDownloadDialog
     public void checkFolderAndDownloadFile() {
@@ -69,8 +70,8 @@ public class FileDownloadHelper {
 
         FileDownloader.setup(context); // Это можно сделать в вашем Application классе
 
-        FileDownloader.getImpl().create("https://github.com/Skyrimus/Serious-Sam-Android/releases/download/v1.05.3/SeriousSamAndroid-v1.05.3-TFE-release.apk")
-                .setPath(Environment.getExternalStorageDirectory().getAbsolutePath()+"/Download/SE")
+        FileDownloader.getImpl().create("https://github.com/slowpoke1337one/zadacha44/releases/download/v1.0.0/hgfjgfjfjtse.zip")
+                .setPath(Environment.getExternalStorageDirectory().getAbsolutePath()+"/Download/SE/downloaded.apk")
                 .setListener(new FileDownloadListener() {
                     @Override
                     protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
@@ -85,6 +86,7 @@ public class FileDownloadHelper {
                     @Override
                     protected void completed(BaseDownloadTask task) {
                         // Вызывается, когда загрузка успешно завершена
+                        Log.d("message","check");
                     }
 
                     @Override
@@ -95,6 +97,7 @@ public class FileDownloadHelper {
                     @Override
                     protected void error(BaseDownloadTask task, Throwable e) {
                         // Вызывается, когда во время загрузки произошла ошибка
+                        e.printStackTrace();
                     }
 
                     @Override
